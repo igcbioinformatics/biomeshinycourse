@@ -1,0 +1,421 @@
+---
+title: "practical-Biodata.ptCrashCourses.Rmd"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, 
+                      message=FALSE, 
+                      warning=FALSE, 
+                      paged.print=FALSE, 
+                      fig.align = "center")
+
+startTime <- Sys.time() # start to count the running time
+
+```
+
+
+
+## 16S rRNA gene amplicon - upstream data analysis
+
+<br>
+
+
+Participant: 
+
+Contact (e-mail): 
+
+Day: 31 January 2020
+
+Place: [IGC](http://www.igc.gulbenkian.pt/), Oeiras, Portugal
+
+<br>
+
+
+#### Import *dada2* packages (and dependencies)
+
+
+```{r install and import packages, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+### Install and import packages 
+
+## dada2 from CRAN (currently does not work for R version 3.6.2)
+#install.packages(pkgs = "dada2") # this function will try to install the latest version of 'dada2' from CRAN - remove the '#' if you don't have 'dada2' installed
+## dada2 instalation from github repository
+#install.packages("devtools") #install this package first to install 'dada2' then; if you run into problems during the installation, you may need to run the following command in your terminal (assuming that you are using an Ubuntu OS); for other OS you may need to use other commands
+#sudo apt install libfontconfig1-dev libcairo2-dev libcurl4-openssl-dev libssl-dev libxml2-dev 
+#
+#
+#devtools::install_github("benjjneb/dada2", ref="v1.14") # this will install the 'dada2' version '1.14' from the 'benjjneb' github repo
+library(package = "dada2") # import package 'dada2'
+packageVersion(pkg = "dada2") # prints the 'dada2' version that you have imported - see below after running this function
+
+```
+
+
+#### Set seed
+
+
+```{r set seed, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+### Set seed
+set.seed(1024) # set seed to the number '1024' - you can use any number
+
+```
+
+
+#### Define the directory of 16S rRNA gene amplicon fastq files
+
+
+```{r set path to NGS files, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+### set the relative path to the 16S rRNA gene amplicon fastq files directory
+
+fastqPath <- "./MiSeq_SOP" # set the path to the 16S rRNA gene amplicon fastq files that you have download 'MiSeq_SOP' (the './' is a notation used that means 'in the current directory')
+list.files(fastqPath) # list all the files under the directory 'fastqPath == ./MiSeq_SOP'
+
+```
+
+
+```{r set path to fwd and rev fastq}
+
+# create a path to each forward and reverse fastq file 
+fastqFwdPath <- sort(x = list.files(path = fastqPath, pattern = "_R1_001.fastq", full.names = TRUE)) # sort fwd fastq file paths
+fastqRevPath <- sort(x = list.files(path = fastqPath, pattern = "_R2_001.fastq", full.names = TRUE)) # sort rev fastq file paths
+
+# extract the sample names  
+sampleNames <- sapply(X = strsplit(x = basename(path = fastqFwdPath), split = "_"), FUN = `[`, 1) # extract sample names from fastqFwdPath
+sampleNames # print the sample names 
+
+```
+
+
+```{r check fwd and rev fastq file lists}
+
+### Compare if fwd and rev fastq file lists correspond (if are sorted)
+
+source("./scripts/biodataPtCrashCourse.R") # import R script with in-house-developed functions
+
+## compareSamplesNames(): in-house-developed function to compare vector files lists of fwd and rev sample names
+compareSampleNames(fwdPathList = fastqFwdPath, revPathList = fastqRevPath, splitSymbol = "_", pickElement = 1) # function that takes as input 4 arguments: (1-2) `fastqFwdPath` and `fastqRevPath` vector fwd and rev path lists; (3) the `splitSymbol` (in our case samples are separated by the symbol "_") and (4) `pickElement` `1`, it means after siplit names by "_" pick the first suffix (that contains the sample name)
+
+```
+
+
+### (0) Fastq Control 
+
+```{r fastQC, fig.height = 8, fig.width=13}
+
+### Plot the quality profiles 
+
+#dir.create("fastQC_plots") # create the folder "fastQC_plots" - remove the first '#' to create this folder if you want to save the plots as pdf files under this folder
+
+#pdf(file = "fastQC_plots/fwd_fastqc_plots.pdf", width = 13, height = 8) # remove the first '#' to save the pdf file with the plot fastq profile under the folder "fastQC_plots"
+plotQualityProfile(fl = fastqFwdPath) # plot the fastq profiles for the forward fastq files 
+#dev.off() # clear the output
+
+#pdf(file = "fastQC_plots/rev_fastqc_plots.pdf", width = 13, height = 8) # do the same as mentioned above but for the reverse fastq files
+plotQualityProfile(fl = fastqRevPath) # plot the fastq profiles for the reverse fastq files 
+#dev.off()
+
+```
+
+
+```{r filter and trim reads, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+### Filter and trim reads
+
+filtFastqFwdPath <- file.path(fastqPath, "filtered", paste0(sampleNames, "_fwd_filt.fastq.gz")) # relative file path for fwd filtered reads that will be created below 
+filtFastqRevPath <- file.path(fastqPath, "filtered", paste0(sampleNames, "_rev_filt.fastq.gz")) # relative file path for rev filtered reads that will be created below
+
+## assign to each file path the sample name
+names(filtFastqFwdPath) <- sampleNames 
+names(filtFastqRevPath) <- sampleNames
+
+## filter and trim fwd and rev fastq files writing the new filtered files in compressed - '.gz' - format to the directories specified above
+filterTrimReads <- filterAndTrim(fwd = fastqFwdPath, filt = filtFastqFwdPath, rev = fastqRevPath, filt.rev = filtFastqRevPath, truncLen = c(240,160), maxEE = 2, truncQ = 2, maxN = 0, rm.phix = TRUE, compress = TRUE, verbose = FALSE, multithread = TRUE) 
+
+knitr::kable(filterTrimReads) # fancy way to print the matrix, you could just do 'filterTrimReads'
+
+```
+
+
+### (2) Estimate error rates
+
+
+```{r learn error rates}
+
+### Learn error rates
+
+errFwd <- learnErrors(fls = filtFastqFwdPath, multithread = TRUE) # model/learn the fwd error rates for the filtered fastq files
+errRev <- learnErrors(fls = filtFastqRevPath, multithread = TRUE) # model/learn the rev error rates for the filtered fastq files
+
+```
+
+
+```{r plot error rates}
+
+## Plot errors 
+
+plotErrors(dq = errFwd, nominalQ = TRUE) # for fwd
+plotErrors(dq = errRev, nominalQ = TRUE) # for rev
+
+```
+
+
+### (3) Denoise unique sequences (dereplicate and exclude singletons)
+
+
+```{r Denoising, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+### Denoising  
+dadaFwd <- dada(derep = filtFastqFwdPath, err = errFwd, multithread = TRUE) # denoise fwd seqs
+dadaRev <- dada(derep = filtFastqRevPath, err = errRev, multithread = TRUE) # denoise rev seqs
+
+```
+
+
+```{r plot denoised sequences, fig.width=18}
+
+## get the no. of unique and ASVs for fwd
+source("./scripts/biodataPtCrashCourse.R") # import the in-house-developed functions 
+uniqFwd <- countUniqueFromDadaObjcList(dadaFwd)[["unique"]] ## count unique Fwd seqs
+denoisedFwd <- countUniqueFromDadaObjcList(dadaFwd)[["denoised"]] ## count denoised Fwd seqs
+
+## get the no. of unique and ASVs for rev
+uniqRev <- countUniqueFromDadaObjcList(dadaRev)[["unique"]]
+denoisedRev <- countUniqueFromDadaObjcList(dadaRev)[["denoised"]]
+
+## total reads
+total <- filterTrimReads[,"reads.in"] # retrieve the total no. of seqs
+names(total) <- sampleNames # rename samples
+
+## now lets join these two vectors to the previous matrix (with absolute abundance)
+denoisedMtx <- rbind(total, uniqFwd, uniqRev,  denoisedFwd, denoisedRev) # you need be careful when you are joining vectors indiscriminately
+#here we are joining the vectors assuming that the order of elements between vectors and the matrix is the same. However this was verified by us...if you sorted your samples in the beginning, in principle, the sample order should remain the same
+
+## Barplot with total, unique and denoised fwd and rev sequences
+#barplot(denoisedMtx, main = "Comparison of the no. of total, unique and denoised sequences", xlab = "Samples", ylab = "Absolute no. of sequences", col = c("#EFF3FF", "#BDD7E7", "#6BAED6", "#3182BD", "#08519C"), legend = rownames(x = denoisedMtx), beside = TRUE)
+
+## Barplot only denoised fwd and rev sequences
+barplot(denoisedMtx[4:5,], main = "Comparison of the no. of denoised sequences: forward vs. reverse", xlab = "Samples", ylab = "Absolute no. of sequences", col = c("#3182BD", "#08519C"), legend = rownames(x = denoisedMtx[4:5,]), beside = TRUE) # notice that we are running the same plot as before, but this time we indexed the matrix to plot only the last two rows, the ones that contain the no. of denoised forward and reverse reads
+
+```
+
+### (4) merge denoised forward and reverse reads
+
+
+```{r Merge PE reads, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+### Merge paired-end reads
+mergePE <- mergePairs(dadaF = dadaFwd, derepF = filtFastqFwdPath, dadaR = dadaRev, derepR = filtFastqRevPath, verbose = TRUE) # merge PE reads
+
+```
+
+
+### (5) Construct an ASV table
+
+
+```{r Make an ASV table}
+
+### Make an ASV table
+
+asvTbl <- makeSequenceTable(samples = mergePE) # tabulate ASVs
+
+```
+
+
+```{r Histogram sequence length}
+
+histSeqLen <- table(nchar(getSequences(asvTbl))) # the dada2 function `getSequences()` retrieve the column name sequences and the `nchar()` counts the read-lenth of that sequences, and, finally the `table()` counts the frequency of read-length   
+
+```
+
+
+### (6) Remove chimeras
+
+
+```{r remove chimeras}
+
+### Remove chimeras from the ASV table
+
+asvTblNoChim <- removeBimeraDenovo(unqs = asvTbl, method = "consensus", multithread = TRUE, verbose = TRUE) 
+
+```
+
+
+```{r summarize seqs}
+
+### Summarize the no. of sequences kept in each pipeline step
+
+getN <- function(x) sum(getUniques(x)) # function that sums `sum(getUniques(x)` the no. of unique sequences `getUniques(x)`
+
+## build a matrix with all the sequences kept in each pipeline step
+summaryTblSeq <- cbind(filterTrimReads, # initial reads and filtered/trimmed reads
+                       sapply(dadaFwd, getN), sapply(dadaRev, getN), # denoised sequences 
+                       sapply(mergePE, getN), # merged PE sequences
+                       rowSums(asvTblNoChim)) # non-chimeric sequences
+
+## rename the column and row names 
+colnames(summaryTblSeq) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(summaryTblSeq) <- sampleNames
+
+## create a second summary table seq with one column for the samples 
+summaryTblSeq2 <- cbind("Samples" = sampleNames, summaryTblSeq)
+
+dir.create("output") # let's create 'output' folder
+write.table(x = summaryTblSeq2, file = "./output/summaryTblSeq.tsv", sep = "\t", row.names = FALSE)
+
+knitr::kable(summaryTblSeq)
+
+```
+
+
+```{r plot no. seqs pipeline - abs. no., fig.width=18}
+
+### Barplot with the abs. abundance of sequences
+
+summaryTblSeqTrans <- t(summaryTblSeq) # transpose 
+barplot(summaryTblSeqTrans, main = "Absolute no. of sequences kept through the pipeline", ylab = "Absolute no. of sequences", xlab = "Samples", col = c("gray", "#EFF3FF", "#BDD7E7", "#6BAED6", "#3182BD", "#08519C"), legend = rownames(summaryTblSeqTrans), beside = TRUE)
+```
+
+
+```{r plot no. seqs pipeline - perc. no.}
+### Barplot in percentage
+
+summaryTblSeqPerc <- apply(X = summaryTblSeq, MARGIN = 2, function(x) x / summaryTblSeq[,1] * 100) # get the correspondent percentage table
+summaryTblSeqPercTrans <- t(summaryTblSeqPerc) # transpose
+barplot(summaryTblSeqPercTrans, main = "Percentage of sequences kept through the pipeline", ylab = "Percentage of sequences (%)", xlab = "Samples", col = c("gray", "#EFF3FF", "#BDD7E7", "#6BAED6", "#3182BD", "#08519C"), legend = rownames(summaryTblSeqPercTrans), beside = TRUE) # plot it 
+
+
+```
+
+
+### (7) Assign taxonomy
+
+
+```{r assign taxonomy to ASVs}
+
+### naive Bayes classifier
+
+taxTbl <- assignTaxonomy(seqs = asvTblNoChim, refFasta = "./database/silva_nr_v132_train_set.fa.gz", multithread = TRUE) # assign taxonomy against the SILVA NR database (version 132)
+
+## add species
+
+taxTbl <- addSpecies(taxtab = taxTbl, refFasta = "./database/silva_species_assignment_v132.fa.gz") # add species to the , previous assignment based on 100% match
+
+```
+
+
+```{r save asv and tax tables}
+
+### Save ASV and taxonomy tables in R format 
+# this can be important if you need just these tables in R format to import latter instead of repeating the whole tutorial
+
+saveRDS(object = asvTblNoChim, file = "./output/asvTblNoChim.rds") # save the ASV table
+saveRDS(object = taxTbl, file = "./output/taxTbl.rds") # save the ASV taxonomy
+
+```
+
+
+```{r Format ASV and Tax tables}
+
+## keep the trackability of your ASVs 
+taxTbl2 <- cbind(taxTbl, "ASV" = paste0("ASV_", 1:nrow(taxTbl))) # add a new column with the new ASV labels/ids to the taxonomy table
+rownames(taxTbl2) <- taxTbl2[,8] # substitute the DNA sequences in rownames by the new identifiers/tags/ids "ASV_nrSeq" in the taxonomy table
+
+## retrieve the DNA sequences 
+uniquesToFasta(asvTblNoChim, "./output/asvFastaDNASequences.fasta", ids = taxTbl2[,8])
+
+## do the same for the ASV table (with the distribution)
+asvTblNoChim2 <- asvTblNoChim # copy ASV table
+colnames(asvTblNoChim2) <- taxTbl2[,8] # substitute column DNA sequences names by "ASV_nrSeq" in the ASV table
+asvTblNoChim2 <- t(asvTblNoChim2) # transpose the ASV matrix table 
+asvTblNoChim2 <- as.data.frame(asvTblNoChim2)
+asvTblNoChim2[,"ASV_ID"] <- rownames(asvTblNoChim2)
+asvTblNoChim2 <- asvTblNoChim2[, c(21,1:19)] # remove the mock community and put the last as the first column
+
+## Let's save these 2 R objs 
+write.table(x = taxTbl2, file = "./output/taxTbl.txt", sep = "\t", row.names = FALSE, quote = FALSE) # save taxonomy table 
+write.table(x = asvTblNoChim2, file = "./output/asvTblNoChim.txt", sep = "\t", row.names = FALSE, quote = FALSE) # save ASV table
+# the code above assumes that the rownames(taxTbl) are in the same order of colnames(asvTblNoChim)
+# if you have doubts about it you can run `rownames(taxTbl) == colnames(asvTblNoChim)` 
+# this will compare all the entries between both vector lists all will return TRUE or FALSE if they are the same or not
+  
+```
+
+
+```{r ASV and Tax table compatible with Biom}
+
+## put taxonomy in a compatible format to convert it latter to biom format
+
+source("./scripts/biodataPtCrashCourse.R") # import R script with in-house-developed functions
+taxTbl2 <- tax2biom(taxTbl2) 
+
+## Join ASV and Taxonomy tables into one
+asvTaxTbl <- cbind(asvTblNoChim2, "taxonomy" = taxTbl2[,-1]) # exclude the "ID" first column from "taxTbl2" because "asvTblNoChim2" has already this information
+write.table(x = asvTaxTbl, file = "./output/asvTaxTbl.txt", sep = "\t", row.names = FALSE, quote = FALSE) # save ASV-taxonomy tables
+
+```
+
+
+```{r Import and edit metadata file}
+
+### Import metadata and put it in a biom format too
+
+metadata <- read.table("./MiSeq_SOP/mouse.time.design", header = TRUE)
+rownames(metadata) <- metadata[,1]
+colnames(metadata) <- c("SampleID", "Condition")
+write.csv(x = metadata, file = "./output/metadata.csv", quote = FALSE, row.names = TRUE)
+
+```
+
+
+### Evaluate accuracy and contamination (with the *mock community*)
+
+
+```{r assess the dada2 accuracy}
+
+### Assess the DADA2 accuracy
+
+mockAsvTbl <- asvTbl["Mock",] # retrieve the sample "Mock" from the ASV table
+mockAsvTbl <- sort(x = mockAsvTbl[mockAsvTbl>0], decreasing = TRUE) # retrieve only ASVs higher than 0
+refMockSeq <- getSequences(file.path(fastqPath, "HMP_MOCK.v35.fasta")) # import reference mock sequences from "HMP_MOCK.v35.fasta"
+compareRefAsvMock <- sum(sapply(names(mockAsvTbl), function(x) any(grepl(x, refMockSeq)))) # compare our ASV mock sequences wiht the reference
+
+```
+
+
+### Convert the ASV table text file into a biom (Biological Observation Matrix) file
+
+```{r ASV table to biom format}
+
+## Convert ASV table with taxonomy in tab-delimited format into biom format  
+
+source("./scripts/biodataPtCrashCourse.R") # import R script with in-house-developed functions
+convertTab2Biom(inFile = "./output/asvTaxTbl.txt", outFile = "./output/asvTable.biom")
+
+```
+
+
+#### Estimate the running time of R 
+
+```{r Time, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+endTime <- Sys.time() 
+
+endTime - startTime # running time
+
+```
+
+
+#### R packages and versions used in this course
+
+```{r References, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+sessionInfo()
+
+```
