@@ -42,14 +42,6 @@ Place: [IGC](http://www.igc.gulbenkian.pt/), Oeiras, Portugal
 
 ### Install and import packages 
 
-## dada2 from CRAN (currently does not work for R version 3.6.2)
-#install.packages(pkgs = "dada2") # this function will try to install the latest version of 'dada2' from CRAN - remove the '#' if you don't have 'dada2' installed
-## dada2 instalation from github repository
-#install.packages("devtools") #install this package first to install 'dada2' then; if you run into problems during the installation, you may need to run the following command in your terminal (assuming that you are using an Ubuntu OS); for other OS you may need to use other commands
-#sudo apt install libfontconfig1-dev libcairo2-dev libcurl4-openssl-dev libssl-dev libxml2-dev 
-#
-#
-#devtools::install_github("benjjneb/dada2", ref="v1.14") # this will install the 'dada2' version '1.14' from the 'benjjneb' github repo
 library(package = "dada2") # import package 'dada2'
 packageVersion(pkg = "dada2") # prints the 'dada2' version that you have imported - see below after running this function
 
@@ -111,15 +103,9 @@ compareSampleNames(fwdPathList = fastqFwdPath, revPathList = fastqRevPath, split
 
 ### Plot the quality profiles 
 
-#dir.create("fastQC_plots") # create the folder "fastQC_plots" - remove the first '#' to create this folder if you want to save the plots as pdf files under this folder
-
-#pdf(file = "fastQC_plots/fwd_fastqc_plots.pdf", width = 13, height = 8) # remove the first '#' to save the pdf file with the plot fastq profile under the folder "fastQC_plots"
 plotQualityProfile(fl = fastqFwdPath) # plot the fastq profiles for the forward fastq files 
-#dev.off() # clear the output
 
-#pdf(file = "fastQC_plots/rev_fastqc_plots.pdf", width = 13, height = 8) # do the same as mentioned above but for the reverse fastq files
 plotQualityProfile(fl = fastqRevPath) # plot the fastq profiles for the reverse fastq files 
-#dev.off()
 
 ```
 
@@ -400,7 +386,7 @@ convertTab2Biom(inFile = "./output/asvTaxTbl.txt", outFile = "./output/asvTable.
 
 ```
 
-
+    
 #### Estimate the running time of R 
 
 ```{r Time, message=FALSE, warning=FALSE, paged.print=FALSE}

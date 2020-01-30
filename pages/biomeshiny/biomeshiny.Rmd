@@ -1,5 +1,5 @@
 ---
-title: "Afteroon Period: Biome-Shiny Demonstration"
+title: "Afternoon Period: Biome-Shiny Demonstration"
 author:
   name: "Henrique Costa"
   email: "hmcosta@igc.gulbenkian.pt"
@@ -169,7 +169,7 @@ The "Phyloseq Summary (3/3)" tab displays some basic information about the activ
 
 <details><summary>**Sparsity**</summary><p>
 
-In numerical analysis, a **sparse matrix** is a matrix in which most elements are zero. Its opposite is a **dense matrix**, where most of the matrix's elements are different from zero. A matrix's **sparsity** is calculated by the number of zero-valued elements in the matrix, divided by the number of total elements.
+A **sparse matrix** is a matrix in which most elements are zero. Its opposite is a **dense matrix**, where most of the matrix's elements are different from zero. A matrix's **sparsity** is calculated by the number of zero-valued elements in the matrix, divided by the number of total elements.
 
 </p></details>
 

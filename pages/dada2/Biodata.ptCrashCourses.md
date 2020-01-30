@@ -29,7 +29,7 @@ The next-generation sequencing (NGS) of 16S rRNA gene amplicon generates large a
   (7) cluster unique/dereplicated sequences into Operational Taxonomic Units (OTUs) based on user-defined threshold (usually 97-98%) 
   (8) classify/annotate taxonomically OTUs against a non-redundant reference database
 
-Following this pipeline you will end-up with the so called **OTU** table (with annotation) often clustered at 97% similarity threshold. An **OTU** is a bioinformatic term for *Operational Taxonomic Unit* that represents one cluster of similar sequences (>97%) of one *species* or taxa. Sequences are clustered into OTUs mostly by two reasons: 
+Following this pipeline you will end-up with the so called **OTU** table (with annotation) often clustered at 97% similarity threshold. **OTU** stands for *Operational Taxonomic Unit* that represents one cluster of similar sequences (>97%) of one *species* or taxa. Sequences are clustered into OTUs mostly by two reasons: 
 
   + to mask some intraspecific diversity
   + to mask sequencing errors 
@@ -1177,7 +1177,7 @@ Finally, we will use the program `biom` to convert the ASV table with taxonomy i
 <details><summary>I want to know more!</summary><p>
 A **biom** file is a *biological observation matrix* file that can contain an OTU table or other gene feature table as well other metadata fields such as, taxonomy data, known as `observation-metadata`. Usually, the `biom` program is called from the command-line. However, for convenience we will use a in-house-developed function `convertTab2Biom` from the R script `biodataPtCrashCourse.R` that calls the `biom` program directly from the R console. Thus, to convert the *ASV table with taxonomy*, run the following R chunk code. Give as input the file path (=`inFile`) for the *ASV table with taxonomy*, `./output/asvTaxTbl.txt`, and as output the file path for the new **biom** that will created (=`outFile`) - `./output/asvTable.biom` -, with the file extension `.biom`.
 </p></details>
-
+  
 <br>
 
 Run the R chunk code below. 
