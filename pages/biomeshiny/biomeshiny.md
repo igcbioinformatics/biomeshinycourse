@@ -718,4 +718,4 @@ Biome-Shiny is an open-source tool, which can be found at https://github.com/Bio
 
 <br>
 
-Back to [main page](../index.html).
+Back to [main page](https://igcbioinformatics.github.io/biomeshinycourse/).
