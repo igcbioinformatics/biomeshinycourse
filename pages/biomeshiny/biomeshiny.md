@@ -1,10 +1,18 @@
 ---
+layout: page
 title: "Afternoon Period: Biome-Shiny Demonstration"
 author:
   name: "Henrique Costa"
   email: "hmcosta@igc.gulbenkian.pt"
   affiliation: "BioData.pt - IGC"
 date: "31 January 2020"
+schemadotorg:
+  "@context": http://schema.org/
+  "@type": CreativeWork
+  "genre": TrainingMaterial
+  isPartOf:
+      url: "https://gtpb.github.io/Web_course_template/"
+      name: "BioData.pt Crash Course: Microbiome Visualization with Biome-Shiny"
 output: 
   html_document:
     toc: true
@@ -707,3 +715,7 @@ Biome-Shiny is an open-source tool, which can be found at https://github.com/Bio
 
 + Erich Neuwirth (2014). RColorBrewer: ColorBrewer Palettes. R package version 1.1-2. https://CRAN.R-project.org/package=RColorBrewer
 
+
+<br>
+
+Back to [main page](../../index.md).

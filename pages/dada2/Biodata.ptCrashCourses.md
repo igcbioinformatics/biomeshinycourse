@@ -5,6 +5,13 @@ author:
      email: "agsousa@igc.gulbenkian.pt"
      affiliation: "Bioinformatics Unit - IGC"
 date: "31 January 2020"
+schemadotorg:
+  "@context": http://schema.org/
+  "@type": CreativeWork
+  "genre": TrainingMaterial
+  isPartOf:
+      url: "https://gtpb.github.io/Web_course_template/"
+      name: "BioData.pt Crash Course: Microbiome Visualization with Biome-Shiny"
 output:
   html_document:
     toc: true
@@ -1333,6 +1340,9 @@ Rosen, Michael J, Benjamin J Callahan, Daniel S Fisher, and Susan P Holmes. 2012
 Wang, Qiong, George M Garrity, James M Tiedje, and James R Cole. 2007. “Naive Bayesian Classifier for Rapid Assignment of rRNA Sequences into the New Bacterial Taxonomy.” Appl. Environ. Microbiol. 73 (16). Am Soc Microbiol: 5261–7.
 
 
+<br>
+
+Back to [main page](../../index.md).
 
 
 
